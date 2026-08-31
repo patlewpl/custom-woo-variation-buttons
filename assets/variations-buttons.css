@@ -1,0 +1,191 @@
+/*
+ * Every value below is a custom property, so styling this widget means setting
+ * variables rather than fighting selectors.
+ *
+ * Defaults chain into Elementor's global kit variables when Elementor is
+ * active, then into a plain fallback. Change the site palette or typography in
+ * Elementor > Site Settings and the widget follows.
+ *
+ * Override per instance:  #custom-wvb-3 { --cwvb-accent: #c00; }
+ * Override everywhere:    .custom-wvb   { --cwvb-radius: 0; }
+ */
+.custom-wvb {
+    --cwvb-accent: var(--e-global-color-primary, #222);
+    --cwvb-accent-contrast: #fff;
+    --cwvb-text: var(--e-global-color-text, #222);
+    --cwvb-muted: var(--e-global-color-secondary, #666);
+    --cwvb-surface: #fff;
+    --cwvb-border: #d6d6d6;
+    --cwvb-border-hover: var(--cwvb-accent);
+
+    --cwvb-font-family: var(--e-global-typography-text-font-family, inherit);
+    --cwvb-font-size: 15px;
+    --cwvb-label-weight: 600;
+    --cwvb-label-spacing: 10px;
+    --cwvb-price-size: 22px;
+    --cwvb-message-size: 14px;
+
+    --cwvb-radius: 4px;
+    --cwvb-gap: 8px;
+    --cwvb-attribute-spacing: 24px;
+    --cwvb-field-height: 46px;
+    --cwvb-option-padding: 10px 18px;
+    --cwvb-border-width: 1px;
+
+    --cwvb-transition: .15s ease;
+    --cwvb-disabled-opacity: .35;
+
+    width: 100%;
+    color: var(--cwvb-text);
+    font-family: var(--cwvb-font-family);
+}
+
+.custom-wvb__attribute {
+    margin-bottom: var(--cwvb-attribute-spacing);
+}
+
+.custom-wvb__label {
+    margin-bottom: var(--cwvb-label-spacing);
+    font-weight: var(--cwvb-label-weight);
+}
+
+.custom-wvb__select {
+    width: 100%;
+    max-width: 420px;
+    min-height: var(--cwvb-field-height);
+    padding: 10px 14px;
+    border: var(--cwvb-border-width) solid var(--cwvb-border);
+    border-radius: var(--cwvb-radius);
+    background: var(--cwvb-surface);
+    color: var(--cwvb-text);
+    font-family: inherit;
+    font-size: var(--cwvb-font-size);
+    cursor: pointer;
+}
+
+.custom-wvb__select:focus {
+    outline: none;
+    border-color: var(--cwvb-border-hover);
+}
+
+.custom-wvb__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cwvb-gap);
+}
+
+.custom-wvb__option {
+    appearance: none;
+    border: var(--cwvb-border-width) solid var(--cwvb-border);
+    border-radius: var(--cwvb-radius);
+    background: var(--cwvb-surface);
+    color: var(--cwvb-text);
+    padding: var(--cwvb-option-padding);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--cwvb-font-size);
+    line-height: 1.2;
+    transition:
+        background var(--cwvb-transition),
+        color var(--cwvb-transition),
+        border-color var(--cwvb-transition),
+        opacity var(--cwvb-transition);
+}
+
+.custom-wvb__option:hover:not(:disabled) {
+    border-color: var(--cwvb-border-hover);
+}
+
+.custom-wvb__option.is-selected {
+    background: var(--cwvb-accent);
+    border-color: var(--cwvb-accent);
+    color: var(--cwvb-accent-contrast);
+}
+
+.custom-wvb__option:disabled {
+    opacity: var(--cwvb-disabled-opacity);
+    cursor: not-allowed;
+}
+
+.custom-wvb__result {
+    margin-top: 10px;
+}
+
+.custom-wvb__price {
+    margin-bottom: 10px;
+    font-size: var(--cwvb-price-size);
+    font-weight: 600;
+}
+
+.custom-wvb__message {
+    min-height: 1.2em;
+    margin-bottom: 15px;
+    color: var(--cwvb-muted);
+    font-size: var(--cwvb-message-size);
+}
+
+.custom-wvb__purchase {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.custom-wvb__quantity {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cwvb-gap);
+}
+
+.custom-wvb__qty {
+    width: 72px;
+    min-height: 42px;
+    padding: 8px;
+    border: var(--cwvb-border-width) solid var(--cwvb-border);
+    border-radius: var(--cwvb-radius);
+    background: var(--cwvb-surface);
+    color: var(--cwvb-text);
+    font-family: inherit;
+}
+
+.custom-wvb__add {
+    border: var(--cwvb-border-width) solid var(--cwvb-accent);
+    border-radius: var(--cwvb-radius);
+    padding: 13px 24px;
+    background: var(--cwvb-accent);
+    color: var(--cwvb-accent-contrast);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 16px;
+    transition:
+        background var(--cwvb-transition),
+        color var(--cwvb-transition),
+        border-color var(--cwvb-transition),
+        opacity var(--cwvb-transition);
+}
+
+.custom-wvb__add:hover:not(:disabled) {
+    opacity: .85;
+}
+
+.custom-wvb__add:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+}
+
+@media (max-width: 767px) {
+    .custom-wvb__purchase {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .custom-wvb__quantity {
+        justify-content: space-between;
+        width: 100%;
+        max-width: 220px;
+    }
+
+    .custom-wvb__add {
+        width: 100%;
+    }
+}
