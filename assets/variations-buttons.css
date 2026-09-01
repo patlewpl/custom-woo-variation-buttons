@@ -25,6 +25,8 @@
     --cwvb-price-size: 22px;
     --cwvb-message-size: 14px;
 
+    --cwvb-price-gap: 8px;
+
     --cwvb-radius: 4px;
     --cwvb-gap: 8px;
     --cwvb-attribute-spacing: 24px;
@@ -66,6 +68,25 @@
 .custom-wvb__select:focus {
     outline: none;
     border-color: var(--cwvb-border-hover);
+}
+
+/*
+ * The closed select once the customer picked something. The is-selected class is
+ * added by the script, because CSS has no selector for "a select with a value".
+ */
+.custom-wvb__select.is-selected {
+    border-color: var(--cwvb-border-hover);
+}
+
+/*
+ * The open dropdown list is drawn by the operating system on macOS, iOS and
+ * Safari, which ignore option rules entirely; only Windows Chrome/Edge and
+ * Firefox honour them. Nothing here paints option:checked on purpose - Firefox
+ * mirrors that onto the closed field too - so the selected state lives on
+ * .is-selected above. option:checked is still available to style from Elementor.
+ */
+.custom-wvb__select option:disabled {
+    color: var(--cwvb-muted);
 }
 
 .custom-wvb__options {
@@ -111,8 +132,25 @@
     margin-top: 10px;
 }
 
-.custom-wvb__price {
+.custom-wvb__price-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--cwvb-price-gap);
     margin-bottom: 10px;
+}
+
+/* display:flex above would otherwise beat the browser's own [hidden] rule. */
+.custom-wvb__price-row[hidden] {
+    display: none;
+}
+
+.custom-wvb__price-prefix {
+    color: var(--cwvb-muted);
+    font-size: var(--cwvb-font-size);
+}
+
+.custom-wvb__price {
     font-size: var(--cwvb-price-size);
     font-weight: 600;
 }

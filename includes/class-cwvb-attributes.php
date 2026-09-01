@@ -76,13 +76,18 @@ final class CWVB_Attributes {
      */
     public static function build_meta( array $payload, array $select_attributes ): array {
         $meta = array();
+        $step = 0;
 
         foreach ( $payload['attributes'] as $attribute_name => $options ) {
+            $step++;
+
             $meta[] = array(
                 'name'    => self::key( $attribute_name ),
                 'label'   => $payload['labels'][ $attribute_name ] ?? $attribute_name,
                 'type'    => in_array( $attribute_name, $select_attributes, true ) ? 'select' : 'buttons',
                 'options' => $options,
+                // Position in the DOM, 1 based: the step number shown to the user.
+                'step'    => $step,
             );
         }
 

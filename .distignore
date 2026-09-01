@@ -1,0 +1,9 @@
+# Everything listed here is kept out of the zip that ships to WordPress sites.
+.git
+.github
+.gitignore
+.distignore
+.idea
+.DS_Store
+build
+*.zip

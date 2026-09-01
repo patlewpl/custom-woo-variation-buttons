@@ -13,5 +13,8 @@ final class Custom_Woo_Variation_Buttons {
 
         // No-op when Elementor is not installed; the shortcode works regardless.
         CWVB_Elementor::init();
+
+        // Updates come from GitHub releases, not from wordpress.org.
+        CWVB_Updater::init();
     }
 }

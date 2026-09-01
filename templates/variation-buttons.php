@@ -5,13 +5,16 @@
  * Override by copying this file to yourtheme/custom-wvb/variation-buttons.php
  *
  * @var array $cwvb {
- *     @type string $instance_id  Unique wrapper id.
- *     @type array  $attributes   One entry per attribute: name, label, type, options.
- *     @type array  $variations   Variation data for the script.
- *     @type array  $order        Attribute keys, in DOM order.
- *     @type int    $quantity     Initial quantity.
- *     @type string $button_text  Add-to-cart button label.
- *     @type array  $config       Runtime config for the script.
+ *     @type string $instance_id    Unique wrapper id.
+ *     @type array  $attributes     One entry per attribute: name, label, type, options, step.
+ *     @type array  $variations     Variation data for the script.
+ *     @type array  $order          Attribute keys, in DOM order.
+ *     @type int    $quantity       Initial quantity.
+ *     @type string $button_text    Add-to-cart button label.
+ *     @type bool   $show_quantity  Whether the quantity field is visible.
+ *     @type string $price_prefix   Text shown to the left of the price.
+ *     @type string $step_format    Step number format, {n} = number. Empty = no numbers.
+ *     @type array  $config         Runtime config for the script.
  * }
  */
 
@@ -30,6 +33,11 @@ defined( 'ABSPATH' ) || exit;
                 data-attribute-type="<?php echo esc_attr( $attribute['type'] ); ?>"
             >
                 <div class="custom-wvb__label">
+                    <?php if ( '' !== $cwvb['step_format'] ) : ?>
+                        <span class="custom-wvb__step"><?php
+                            echo esc_html( str_replace( '{n}', (string) $attribute['step'], $cwvb['step_format'] ) );
+                        ?></span>
+                    <?php endif; ?>
                     <?php echo esc_html( $attribute['label'] ); ?>
                 </div>
 
@@ -67,21 +75,38 @@ defined( 'ABSPATH' ) || exit;
     </div>
 
     <div class="custom-wvb__result" aria-live="polite">
-        <div class="custom-wvb__price"></div>
+        <?php // Hidden until a variation resolves, so the prefix never shows on its own. ?>
+        <div class="custom-wvb__price-row" hidden>
+            <?php if ( '' !== $cwvb['price_prefix'] ) : ?>
+                <span class="custom-wvb__price-prefix"><?php echo esc_html( $cwvb['price_prefix'] ); ?></span>
+            <?php endif; ?>
+
+            <div class="custom-wvb__price"></div>
+        </div>
+
         <div class="custom-wvb__message"></div>
     </div>
 
     <div class="custom-wvb__purchase">
-        <label class="custom-wvb__quantity">
-            <span>Ilość</span>
+        <?php if ( $cwvb['show_quantity'] ) : ?>
+            <label class="custom-wvb__quantity">
+                <span>Ilość</span>
+                <input
+                    type="number"
+                    class="custom-wvb__qty"
+                    value="<?php echo esc_attr( $cwvb['quantity'] ); ?>"
+                    min="1"
+                    step="1"
+                >
+            </label>
+        <?php else : ?>
+            <?php // Still submitted, just not editable by the customer. ?>
             <input
-                type="number"
+                type="hidden"
                 class="custom-wvb__qty"
                 value="<?php echo esc_attr( $cwvb['quantity'] ); ?>"
-                min="1"
-                step="1"
             >
-        </label>
+        <?php endif; ?>
 
         <button
             type="button"

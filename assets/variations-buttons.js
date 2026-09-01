@@ -42,6 +42,7 @@
         const addButton = wrapper.querySelector('.custom-wvb__add');
         const qtyInput = wrapper.querySelector('.custom-wvb__qty');
         const priceEl = wrapper.querySelector('.custom-wvb__price');
+        const priceRow = wrapper.querySelector('.custom-wvb__price-row');
         const messageEl = wrapper.querySelector('.custom-wvb__message');
 
         if (!containers.length || !addButton) {
@@ -280,6 +281,26 @@
             if (priceEl) {
                 priceEl.innerHTML = html || '';
             }
+
+            // Keeps a price prefix like "Cena:" from showing without a price.
+            if (priceRow) {
+                priceRow.hidden = !html;
+            }
+        }
+
+        /**
+         * CSS cannot express "a select that has a value", so the selected state of
+         * the closed field is a class. The open option list is drawn by the OS on
+         * macOS/iOS, which is why the field itself carries the styling.
+         */
+        function syncSelectStates() {
+            containers.forEach(function (container) {
+                const select = container.querySelector('.custom-wvb__select');
+
+                if (select) {
+                    select.classList.toggle('is-selected', !!select.value);
+                }
+            });
         }
 
         /**
@@ -295,6 +316,7 @@
             setMessage('');
 
             updateAvailability();
+            syncSelectStates();
 
             if (!selectionIsComplete(selections)) {
                 return { variation: null, complete: false };

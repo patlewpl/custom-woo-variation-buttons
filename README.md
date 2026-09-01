@@ -34,6 +34,13 @@ select_attribute Attribute(s) to render as a select; the rest become buttons.
                  product attribute is used. Unknown names are ignored.
 quantity         Initial quantity. Default: 1.
 button_text      Add-to-cart button text. Default: "Dodaj do koszyka".
+show_quantity    Show the quantity field. "no" hides it and sends `quantity`
+                 to the cart instead. Default: "yes".
+price_prefix     Text shown to the left of the price, e.g. "Cena:". It appears
+                 only once a variation resolves. Default: empty.
+step_numbers     Number the attributes, starting at 1. Default: "yes".
+step_format      Number format, {n} = the number, e.g. "Krok {n}:".
+                 Default: "{n}.".
 
 Example
 -------
@@ -57,6 +64,7 @@ Structure
       class-cwvb-product-data.php             reads variations from WooCommerce + cache
       class-cwvb-shortcode.php                shortcode, guards, error logging
       class-cwvb-elementor.php                Elementor widget registration (lazy)
+      class-cwvb-updater.php                  updates from GitHub releases
       widgets/
         class-cwvb-elementor-widget.php       the widget and its style controls
     templates/
@@ -64,13 +72,67 @@ Structure
     assets/
       variations-buttons.css
       variations-buttons.js
+    .distignore                             files kept out of the release zip
+    .github/workflows/release.yml           tag -> build zip -> GitHub release
 
 Constants: `CWVB_VERSION`, `CWVB_FILE`, `CWVB_PATH`, `CWVB_URL`.
 
 Bump the version in the `Version:` header of the main file **only** —
 `CWVB_VERSION` is read back from it with `get_file_data()`. Changing the version
 invalidates the variation cache, because the constant is part of the transient
-key.
+key. The release workflow refuses to build if the git tag and this header
+disagree.
+
+Releasing an update
+-------------------
+Installed sites are told about new versions by the plugin itself, from GitHub
+releases. Shipping one is three commands:
+
+    # 1. bump "Version: 1.4.0" in custom-woo-variation-buttons.php
+    git commit -am "Release 1.4.0"
+    git tag v1.4.0
+    git push && git push --tags
+
+Pushing the tag runs `.github/workflows/release.yml`, which
+
+1. fails the build if the tag and the `Version:` header disagree,
+2. builds `custom-woo-variation-buttons.zip` (everything in `.distignore` left
+   out, unpacking to a folder named exactly like the installed plugin),
+3. publishes the GitHub release with auto-generated notes and the zip attached.
+
+Sites then show "Update available" within about a day, or immediately after
+Dashboard → Updates → **Check again**. The release notes become the changelog in
+the "View version details" modal.
+
+The repository has to stay **public**: the update check runs unauthenticated
+from each customer's server, with no token anywhere. Mark a release as a
+pre-release to test a tag without offering it to anyone — `/releases/latest`
+skips drafts and pre-releases.
+
+How the update check works
+--------------------------
+`class-cwvb-updater.php`, no third-party library:
+
+    Update URI: https://github.com/patlewpl/custom-woo-variation-buttons
+
+That header (WP 5.8+) makes WordPress skip wordpress.org for this plugin — so
+nobody can hijack it by publishing the same slug there — and fire
+`update_plugins_github.com` during its own twice-daily update check. The class
+answers with the latest release, and:
+
+* caches the GitHub response for 6 hours, and a failed lookup for 30 minutes, so
+  an outage or a rate limit never puts an HTTP timeout in front of wp-admin;
+* returns its payload even when the release is *not* newer, which is what makes
+  the per-site auto-update toggle available;
+* prefers the zip attached to the release, falling back to GitHub's generated
+  source zip, in which case `upgrader_source_selection` renames the unpacked
+  `owner-repo-<commit>/` folder back to the plugin slug — without that WordPress
+  would install a second copy and deactivate the plugin;
+* never throws or prints. A broken release means no update offered, nothing else.
+
+To move the plugin to a different repo, change `CWVB_Updater::REPO` and the
+`Update URI` header together; `HOST` has to match the header's hostname, because
+WordPress builds the filter name from it.
 
 Template override
 -----------------
@@ -79,7 +141,9 @@ Copy `templates/variation-buttons.php` into your theme:
     yourtheme/custom-wvb/variation-buttons.php
 
 The template receives everything in a single `$cwvb` array (`instance_id`,
-`attributes`, `variations`, `order`, `quantity`, `button_text`, `config`).
+`attributes`, `variations`, `order`, `quantity`, `button_text`, `show_quantity`,
+`price_prefix`, `step_format`, `config`). Each entry in `attributes` carries its
+1 based `step` number.
 The path can also be swapped with a filter:
 
     add_filter( 'custom_wvb_template', function ( $path, $cwvb ) {
@@ -93,10 +157,22 @@ produktu (przyciski)** (General category). It renders through the exact same
 code path as the shortcode, so both stay in sync.
 
 Content tab: product picker (up to 200 published variable products), attributes
-to render as selects, button text, initial quantity.
+to render as selects, button text, text before the price, attribute numbering
+and its format, quantity field on/off, initial quantity.
 
 Style tab: Layout, Attribute labels, Option buttons (normal / hover / selected /
-unavailable), Select, Price, Messages, Quantity, Cart button.
+unavailable), Select (normal / selected / list), Price (including the text
+before it), Messages, Quantity, Cart button.
+
+Select styling
+--------------
+A native `<select>` opens a list drawn by the operating system. macOS, iOS and
+Safari ignore CSS on `option` completely; Windows Chrome/Edge and Firefox honour
+it. So the selected state is styled on the **closed** field instead: the script
+adds `.is-selected` to a select that has a value, which is the "Wybrany" tab in
+Elementor and works in every browser. The "Lista" tab writes to
+`option:checked`, and says so — treat it as a bonus, not as the design. A
+dropdown styled identically everywhere needs a custom listbox, not a `<select>`.
 
 Requires Elementor 3.5+ (`elementor/widgets/register`). Without Elementor
 nothing is loaded and the shortcode is unaffected.
@@ -118,7 +194,8 @@ restyles the widget with no CSS at all.
 Full list: `--cwvb-accent`, `--cwvb-accent-contrast`, `--cwvb-text`,
 `--cwvb-muted`, `--cwvb-surface`, `--cwvb-border`, `--cwvb-border-hover`,
 `--cwvb-font-family`, `--cwvb-font-size`, `--cwvb-label-weight`,
-`--cwvb-label-spacing`, `--cwvb-price-size`, `--cwvb-message-size`,
+`--cwvb-label-spacing`, `--cwvb-price-size`, `--cwvb-price-gap`,
+`--cwvb-message-size`,
 `--cwvb-radius`, `--cwvb-gap`, `--cwvb-attribute-spacing`,
 `--cwvb-field-height`, `--cwvb-option-padding`, `--cwvb-border-width`,
 `--cwvb-transition`, `--cwvb-disabled-opacity`.
@@ -135,16 +212,23 @@ Class map for anything the variables do not cover:
                                     [data-attribute-type="select|buttons"]
                                     [data-attribute-name="attribute_pa_x"]
     .custom-wvb__label              attribute label
-    .custom-wvb__select             the select
+    .custom-wvb__step               step number inside the label
+    .custom-wvb__select             the select (.is-selected once it has a value)
     .custom-wvb__options            button container
     .custom-wvb__option             option button (.is-selected, :disabled)
+    .custom-wvb__price-row          price line ([hidden] until a variation resolves)
+    .custom-wvb__price-prefix       text left of the price
     .custom-wvb__price              price
     .custom-wvb__message            validation message
-    .custom-wvb__quantity           quantity wrapper
+    .custom-wvb__quantity           quantity wrapper (absent when hidden)
     .custom-wvb__qty                quantity input
     .custom-wvb__add                add-to-cart button (:disabled)
 
-Assets are registered under the handle `custom-woo-variation-buttons`.
+Assets are registered under the handle `custom-woo-variation-buttons`, versioned
+with `CWVB_VERSION` — releasing a new version is what busts the browser cache.
+On a `WP_DEBUG` install the file's `filemtime()` is used instead, so editing CSS
+locally still shows up; production pays no `stat()` call for it.
+
 To load your own CSS after the plugin's:
 
     wp_enqueue_style( 'my-styles', $url, array( 'custom-woo-variation-buttons' ), $ver );
@@ -165,6 +249,11 @@ TTL is 1 day; change or disable it with:
 
 If your shop calculates VAT per customer (B2B / EU VAT plugins), set the TTL to
 0 — price_html would otherwise be shared between customers.
+
+Inside a single request the payload is memoised per product as well, so two
+widgets for the same product (or a widget next to a shortcode) cost one lookup.
+That holds with the TTL filtered to 0 too: currency, tax display and stock
+cannot change mid-request.
 
 Error handling
 --------------

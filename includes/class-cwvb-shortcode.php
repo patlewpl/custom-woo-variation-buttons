@@ -48,6 +48,10 @@ final class CWVB_Shortcode {
                 'select_attribute' => '',
                 'quantity'         => 1,
                 'button_text'      => 'Dodaj do koszyka',
+                'show_quantity'    => 'yes',
+                'price_prefix'     => '',
+                'step_numbers'     => 'yes',
+                'step_format'      => '{n}.',
             ),
             $atts,
             self::TAG
@@ -82,15 +86,47 @@ final class CWVB_Shortcode {
 
         return self::render_template(
             array(
-                'instance_id' => 'custom-wvb-' . wp_unique_id(),
-                'attributes'  => $attribute_meta,
-                'variations'  => $payload['variations'],
-                'order'       => array_column( $attribute_meta, 'name' ),
-                'quantity'    => max( 1, absint( $atts['quantity'] ) ),
-                'button_text' => (string) $atts['button_text'],
-                'config'      => self::build_config( (string) $atts['button_text'] ),
+                'instance_id'   => 'custom-wvb-' . wp_unique_id(),
+                'attributes'    => $attribute_meta,
+                'variations'    => $payload['variations'],
+                'order'         => array_column( $attribute_meta, 'name' ),
+                'quantity'      => max( 1, absint( $atts['quantity'] ) ),
+                'button_text'   => (string) $atts['button_text'],
+                'show_quantity' => self::is_on( $atts['show_quantity'] ),
+                'price_prefix'  => trim( (string) $atts['price_prefix'] ),
+                // Empty format = no numbering, so the template needs one check only.
+                'step_format'   => self::step_format( $atts ),
+                'config'        => self::build_config( (string) $atts['button_text'] ),
             )
         );
+    }
+
+    /**
+     * '' when the attributes are not numbered. A blank format with numbering on
+     * would otherwise turn the numbers off by accident.
+     */
+    private static function step_format( array $atts ): string {
+        if ( ! self::is_on( $atts['step_numbers'] ) ) {
+            return '';
+        }
+
+        $format = (string) $atts['step_format'];
+
+        return '' !== trim( $format ) ? $format : '{n}.';
+    }
+
+    /**
+     * Shortcode booleans arrive as strings ("yes", "1", "true"), Elementor
+     * switchers as "yes" or "", and a filter could hand over a real bool.
+     */
+    private static function is_on( $value ): bool {
+        if ( is_bool( $value ) ) {
+            return $value;
+        }
+
+        return function_exists( 'wc_string_to_bool' )
+            ? wc_string_to_bool( $value )
+            : in_array( strtolower( trim( (string) $value ) ), array( 'yes', '1', 'true', 'on' ), true );
     }
 
     /**

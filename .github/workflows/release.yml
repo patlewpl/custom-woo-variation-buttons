@@ -1,0 +1,55 @@
+name: Release
+
+# Pushing a v* tag is the whole deploy. The zip attached here is what every
+# WordPress site downloads, so it has to unpack to a folder named exactly like
+# the installed plugin: custom-woo-variation-buttons.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The tag is what sites compare against their installed version, so a tag
+      # that disagrees with the Version header would offer an update that
+      # installs the same number and comes back forever. Fail loudly instead.
+      - name: Check the tag against the Version header
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME#v}"
+          header="$(grep -m1 -E '^[[:space:]]*\*?[[:space:]]*Version:' custom-woo-variation-buttons.php \
+            | sed -E 's/.*Version:[[:space:]]*//' | tr -d '[:space:]')"
+
+          echo "tag: $tag / header: $header"
+
+          if [ "$tag" != "$header" ]; then
+            echo "::error::Tag $tag does not match the Version header $header. Bump the header, commit, retag."
+            exit 1
+          fi
+
+      - name: Build the zip
+        run: |
+          set -euo pipefail
+          mkdir -p build/custom-woo-variation-buttons
+          rsync -a --exclude-from=.distignore ./ build/custom-woo-variation-buttons/
+          cd build
+          zip -qr ../custom-woo-variation-buttons.zip custom-woo-variation-buttons
+          cd ..
+          unzip -l custom-woo-variation-buttons.zip
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            custom-woo-variation-buttons.zip \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes

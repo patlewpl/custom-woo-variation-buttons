@@ -8,12 +8,27 @@ defined( 'ABSPATH' ) || exit;
 final class CWVB_Product_Data {
 
     /**
+     * Two widgets for the same product on one page, or a shortcode next to a
+     * widget, would otherwise repeat the whole lookup. Safe even when caching is
+     * filtered off: currency, tax display and stock cannot change mid-request.
+     *
+     * @var array<int, array>
+     */
+    private static $memo = array();
+
+    /**
      * get_available_variations() loads every variation object, which is by far
      * the most expensive call in this plugin. Do it once per product state.
      *
      * Return 0 from the custom_wvb_cache_ttl filter to disable caching.
      */
     public static function get( WC_Product $product ): array {
+        $product_id = $product->get_id();
+
+        if ( isset( self::$memo[ $product_id ] ) ) {
+            return self::$memo[ $product_id ];
+        }
+
         $ttl = (int) apply_filters( 'custom_wvb_cache_ttl', DAY_IN_SECONDS, $product );
         $key = self::cache_key( $product );
 
@@ -21,6 +36,8 @@ final class CWVB_Product_Data {
             $cached = get_transient( $key );
 
             if ( self::is_valid_payload( $cached ) ) {
+                self::$memo[ $product_id ] = $cached;
+
                 return $cached;
             }
         }
@@ -30,6 +47,8 @@ final class CWVB_Product_Data {
         if ( $ttl > 0 && ! empty( $payload['variations'] ) ) {
             set_transient( $key, $payload, $ttl );
         }
+
+        self::$memo[ $product_id ] = $payload;
 
         return $payload;
     }

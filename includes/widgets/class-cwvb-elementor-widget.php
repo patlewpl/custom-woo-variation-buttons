@@ -45,29 +45,44 @@ class CWVB_Elementor_Widget extends \Elementor\Widget_Base {
     /**
      * Variable products for the picker. Runs in the editor only - a shop with
      * thousands of products must not pay for this on every front-end render.
+     *
+     * Elementor builds the control stack of every registered widget on each
+     * editor load, so this runs even when nobody places this widget. Asking for
+     * IDs and priming the post cache once keeps it to two queries; the default
+     * return would build 200 WC_Product_Variable objects to read 200 names.
      */
     private function get_product_options(): array {
         if ( ! CWVB_Elementor::is_editor_request() || ! function_exists( 'wc_get_products' ) ) {
             return array();
         }
 
-        $products = wc_get_products(
+        $product_ids = wc_get_products(
             array(
                 'type'    => 'variable',
                 'status'  => 'publish',
                 'limit'   => 200,
                 'orderby' => 'title',
                 'order'   => 'ASC',
+                'return'  => 'ids',
             )
         );
 
+        if ( ! is_array( $product_ids ) || empty( $product_ids ) ) {
+            return array();
+        }
+
+        // Titles only: no term or meta cache needed for a dropdown label.
+        _prime_post_caches( $product_ids, false, false );
+
         $options = array();
 
-        foreach ( $products as $product ) {
-            $options[ (string) $product->get_id() ] = sprintf(
+        foreach ( $product_ids as $product_id ) {
+            $product_id = (int) $product_id;
+
+            $options[ (string) $product_id ] = sprintf(
                 '%s (#%d)',
-                $product->get_name(),
-                $product->get_id()
+                get_the_title( $product_id ),
+                $product_id
             );
         }
 
@@ -123,6 +138,52 @@ class CWVB_Elementor_Widget extends \Elementor\Widget_Base {
                 'label'   => 'Tekst przycisku',
                 'type'    => \Elementor\Controls_Manager::TEXT,
                 'default' => 'Dodaj do koszyka',
+            )
+        );
+
+        $this->add_control(
+            'price_prefix',
+            array(
+                'label'       => 'Tekst przed ceną',
+                'type'        => \Elementor\Controls_Manager::TEXT,
+                'label_block' => true,
+                'placeholder' => 'Cena:',
+                'description' => 'Pokazuje się po lewej stronie ceny, dopiero po wybraniu wariantu.',
+            )
+        );
+
+        $this->add_control(
+            'step_numbers',
+            array(
+                'label'       => 'Numeruj atrybuty',
+                'type'        => \Elementor\Controls_Manager::SWITCHER,
+                'default'     => 'yes',
+                'description' => 'Dodaje numer kroku przed etykietą każdego atrybutu, licząc od 1.',
+            )
+        );
+
+        $this->add_control(
+            'step_format',
+            array(
+                'label'       => 'Format numeru',
+                'type'        => \Elementor\Controls_Manager::TEXT,
+                'default'     => '{n}.',
+                'placeholder' => '{n}.',
+                'description' => '{n} zostanie zastąpione numerem, np. "Krok {n}:".',
+                'condition'   => array( 'step_numbers' => 'yes' ),
+            )
+        );
+
+        $this->add_control(
+            'show_quantity',
+            array(
+                'label'       => 'Pole ilości',
+                'type'        => \Elementor\Controls_Manager::SWITCHER,
+                'label_on'    => 'Pokaż',
+                'label_off'   => 'Ukryj',
+                'default'     => 'yes',
+                'separator'   => 'before',
+                'description' => 'Po ukryciu do koszyka trafia ilość początkowa.',
             )
         );
 
@@ -437,6 +498,10 @@ class CWVB_Elementor_Widget extends \Elementor\Widget_Base {
             )
         );
 
+        $this->start_controls_tabs( 'select_tabs' );
+
+        $this->start_controls_tab( 'select_tab_normal', array( 'label' => 'Normalny' ) );
+
         $this->add_control(
             'select_color',
             array(
@@ -469,6 +534,87 @@ class CWVB_Elementor_Widget extends \Elementor\Widget_Base {
                 ),
             )
         );
+
+        $this->end_controls_tab();
+
+        /*
+         * The field after a choice was made. The script adds .is-selected, so
+         * this styles the closed select, which is the part every browser renders
+         * the same way.
+         */
+        $this->start_controls_tab( 'select_tab_selected', array( 'label' => 'Wybrany' ) );
+
+        $this->add_control(
+            'select_color_selected',
+            array(
+                'label'     => 'Tekst',
+                'type'      => \Elementor\Controls_Manager::COLOR,
+                'selectors' => array(
+                    '{{WRAPPER}} .custom-wvb__select.is-selected' => 'color: {{VALUE}};',
+                ),
+            )
+        );
+
+        $this->add_control(
+            'select_background_selected',
+            array(
+                'label'     => 'Tło',
+                'type'      => \Elementor\Controls_Manager::COLOR,
+                'selectors' => array(
+                    '{{WRAPPER}} .custom-wvb__select.is-selected' => 'background: {{VALUE}};',
+                ),
+            )
+        );
+
+        $this->add_control(
+            'select_border_color_selected',
+            array(
+                'label'     => 'Obramowanie',
+                'type'      => \Elementor\Controls_Manager::COLOR,
+                'selectors' => array(
+                    '{{WRAPPER}} .custom-wvb__select.is-selected' => 'border-color: {{VALUE}};',
+                ),
+            )
+        );
+
+        $this->end_controls_tab();
+
+        $this->start_controls_tab( 'select_tab_list', array( 'label' => 'Lista' ) );
+
+        $this->add_control(
+            'select_option_color_selected',
+            array(
+                'label'     => 'Tekst zaznaczonej pozycji',
+                'type'      => \Elementor\Controls_Manager::COLOR,
+                'selectors' => array(
+                    '{{WRAPPER}} .custom-wvb__select option:checked' => 'color: {{VALUE}};',
+                ),
+            )
+        );
+
+        $this->add_control(
+            'select_option_background_selected',
+            array(
+                'label'     => 'Tło zaznaczonej pozycji',
+                'type'      => \Elementor\Controls_Manager::COLOR,
+                'selectors' => array(
+                    '{{WRAPPER}} .custom-wvb__select option:checked' => 'background: {{VALUE}};',
+                ),
+            )
+        );
+
+        $this->add_control(
+            'select_list_note',
+            array(
+                'type'            => \Elementor\Controls_Manager::RAW_HTML,
+                'raw'             => 'Rozwiniętą listę rysuje system operacyjny. Na macOS, iOS i w Safari te kolory zostaną zignorowane — działają w Chrome/Edge i Firefox na Windows. Stan wybrany ustaw w zakładce "Wybrany", bo ta działa wszędzie.',
+                'content_classes' => 'elementor-descriptor',
+            )
+        );
+
+        $this->end_controls_tab();
+
+        $this->end_controls_tabs();
 
         $this->add_responsive_control(
             'select_height',
@@ -531,6 +677,63 @@ class CWVB_Elementor_Widget extends \Elementor\Widget_Base {
             )
         );
 
+        $this->add_control(
+            'price_prefix_heading',
+            array(
+                'label'     => 'Tekst przed ceną',
+                'type'      => \Elementor\Controls_Manager::HEADING,
+                'separator' => 'before',
+                'condition' => array( 'price_prefix!' => '' ),
+            )
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            array(
+                'name'      => 'price_prefix_typography',
+                'selector'  => '{{WRAPPER}} .custom-wvb__price-prefix',
+                'condition' => array( 'price_prefix!' => '' ),
+            )
+        );
+
+        $this->add_control(
+            'price_prefix_color',
+            array(
+                'label'     => 'Kolor',
+                'type'      => \Elementor\Controls_Manager::COLOR,
+                'condition' => array( 'price_prefix!' => '' ),
+                'selectors' => array(
+                    '{{WRAPPER}} .custom-wvb__price-prefix' => 'color: {{VALUE}};',
+                ),
+            )
+        );
+
+        $this->add_responsive_control(
+            'price_prefix_gap',
+            array(
+                'label'      => 'Odstęp od ceny',
+                'type'       => \Elementor\Controls_Manager::SLIDER,
+                'size_units' => array( 'px', 'em' ),
+                'range'      => array( 'px' => array( 'min' => 0, 'max' => 60 ) ),
+                'condition'  => array( 'price_prefix!' => '' ),
+                'selectors'  => array(
+                    '{{WRAPPER}} .custom-wvb' => '--cwvb-price-gap: {{SIZE}}{{UNIT}};',
+                ),
+            )
+        );
+
+        $this->add_control(
+            'price_prefix_stack',
+            array(
+                'label'     => 'Tekst nad ceną',
+                'type'      => \Elementor\Controls_Manager::SWITCHER,
+                'condition' => array( 'price_prefix!' => '' ),
+                'selectors' => array(
+                    '{{WRAPPER}} .custom-wvb__price-row' => 'flex-direction: column; align-items: flex-start;',
+                ),
+            )
+        );
+
         $this->end_controls_section();
     }
 
@@ -569,8 +772,10 @@ class CWVB_Elementor_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_quantity',
             array(
-                'label' => 'Ilość',
-                'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+                'label'     => 'Ilość',
+                'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+                // Nothing to style when the field is not rendered.
+                'condition' => array( 'show_quantity' => 'yes' ),
             )
         );
 
@@ -792,6 +997,11 @@ class CWVB_Elementor_Widget extends \Elementor\Widget_Base {
                 'select_attribute' => $settings['select_attribute'] ?? '',
                 'quantity'         => $settings['quantity'] ?? 1,
                 'button_text'      => $settings['button_text'] ?? 'Dodaj do koszyka',
+                'show_quantity'    => $settings['show_quantity'] ?? 'yes',
+                'price_prefix'     => $settings['price_prefix'] ?? '',
+                'step_numbers'     => $settings['step_numbers'] ?? 'yes',
+                // A cleared format field falls back to "{n}." in the renderer.
+                'step_format'      => $settings['step_format'] ?? '{n}.',
             )
         );
 
