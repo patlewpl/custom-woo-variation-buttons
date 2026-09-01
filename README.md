@@ -4,8 +4,11 @@ Custom WooCommerce Variation Buttons
 Renders a WooCommerce variable product anywhere on the site: chosen attributes
 as selects, the rest as buttons, with an AJAX add-to-cart.
 
-Note: all user-facing strings are Polish by design and are hardcoded, not
-translatable.
+Note: every string the store or the editor sees — the widget name, the Elementor
+panel labels and the customer-facing messages — is Polish by design and
+hardcoded, not translatable. This document is in English and names those
+controls by function and by their position in the panel, not by their on-screen
+label.
 
 Requirements
 ------------
@@ -24,7 +27,7 @@ Basic usage
 
 Recommended usage
 -----------------
-[woo_variations_buttons product_id="123" select_attribute="pa_egzamin"]
+[woo_variations_buttons product_id="123" select_attribute="pa_size"]
 
 Optional attributes
 -------------------
@@ -33,22 +36,40 @@ select_attribute Attribute(s) to render as a select; the rest become buttons.
                  Comma separated for more than one. If omitted, the first
                  product attribute is used. Unknown names are ignored.
 quantity         Initial quantity. Default: 1.
-button_text      Add-to-cart button text. Default: "Dodaj do koszyka".
+button_text      Add-to-cart button text. Defaults to the built-in Polish label
+                 (see the defaults in `CWVB_Shortcode::build()`).
 show_quantity    Show the quantity field. "no" hides it and sends `quantity`
                  to the cart instead. Default: "yes".
-price_prefix     Text shown to the left of the price, e.g. "Cena:". It appears
-                 only once a variation resolves. Default: empty.
+price_prefix     Text shown to the left of the price, e.g. a "Price:" label. It
+                 appears only once a variation resolves. Default: empty.
 step_numbers     Number the attributes, starting at 1. Default: "yes".
-step_format      Number format, {n} = the number, e.g. "Krok {n}:".
+step_format      Number format, {n} = the number, e.g. "Step {n}:".
                  Default: "{n}.".
+benefits_title   Heading of the package block shown between the attributes and
+                 the price. Default: empty.
+benefits         The lines of that block, separated by "|" (or by newlines).
+                 Default: empty.
+benefits_marker  Character in front of every line. Default: "✓". Empty = none.
+benefits_note    Small print under the list. Default: empty.
+
+The package block is static — it does not change with the selected variation,
+and it is shown before anything is picked. Nothing is output at all when the
+title, the list and the note are all empty. In the Elementor widget these four
+controls come prefilled with the store's own Polish copy; through the shortcode
+they start empty.
+
+    [woo_variations_buttons product_id="123"
+      benefits_title="What you get in the selected package:"
+      benefits="20 online 1:1 lessons|A personal study plan|Materials and tutor support"
+      benefits_note="Platform access depends on the language and course chosen."]
 
 Example
 -------
-[woo_variations_buttons product_id="123" select_attribute="pa_egzamin" button_text="Dodaj do koszyka"]
+[woo_variations_buttons product_id="123" select_attribute="pa_size" button_text="Buy now"]
 
 Two selects
 -----------
-[woo_variations_buttons product_id="123" select_attribute="pa_egzamin,pa_termin"]
+[woo_variations_buttons product_id="123" select_attribute="pa_size,pa_date"]
 
 Selects are rendered in the product's own attribute order, not in the order
 listed here. Because picking an attribute resets every attribute below it,
@@ -142,8 +163,9 @@ Copy `templates/variation-buttons.php` into your theme:
 
 The template receives everything in a single `$cwvb` array (`instance_id`,
 `attributes`, `variations`, `order`, `quantity`, `button_text`, `show_quantity`,
-`price_prefix`, `step_format`, `config`). Each entry in `attributes` carries its
-1 based `step` number.
+`price_prefix`, `step_format`, `benefits_title`, `benefits`, `benefits_marker`,
+`benefits_note`, `config`). Each entry in `attributes` carries its 1 based `step`
+number, and `benefits` is a plain array of strings whatever it was configured as.
 The path can also be swapped with a filter:
 
     add_filter( 'custom_wvb_template', function ( $path, $cwvb ) {
@@ -152,27 +174,45 @@ The path can also be swapped with a filter:
 
 Elementor widget
 ----------------
-Besides the shortcode, the plugin registers an Elementor widget: **Warianty
-produktu (przyciski)** (General category). It renders through the exact same
-code path as the shortcode, so both stay in sync.
+Besides the shortcode, the plugin registers an Elementor widget in the General
+category, listed under a Polish name and findable by searching for "variation",
+"woocommerce" or "cart". It renders through the exact same code path as the
+shortcode, so both stay in sync.
 
-Content tab: product picker (up to 200 published variable products), attributes
-to render as selects, button text, text before the price, attribute numbering
-and its format, quantity field on/off, initial quantity.
+Content tab, in panel order:
 
-Style tab: Layout, Attribute labels, Option buttons (normal / hover / selected /
-unavailable), Select (normal / selected / list), Price (including the text
-before it), Messages, Quantity, Cart button.
+1. Product — picker for up to 200 published variable products, attributes to
+   render as selects, button text, text before the price, attribute numbering
+   and its format, quantity field on/off, initial quantity.
+2. Package contents — heading, a repeater for the list, the marker character,
+   and the small print under it.
+
+Style tab, in panel order: Layout, Package contents, Attribute labels, Option
+buttons (normal / hover / selected / unavailable), Select (normal / selected /
+option list), Price (including the text before it), Messages, Quantity, Cart
+button.
+
+The package style section covers the box (spacing above and below, padding,
+background, border, corner radius, shadow) and then each part separately:
+heading typography, colour and the gap under it; list typography and colour;
+marker colour and its own typography, so the marker can be larger than the line
+it sits on; the gap between lines and the gap after the marker; note typography,
+colour and the gap above it. Every one of those writes to a variable or a
+selector of its own, so restyling this block never touches the attribute labels,
+the buttons or the select. The one thing not exposed is text alignment — the
+list is a flex row per line, and left alignment is the only sensible one; centre
+it with `.custom-wvb__benefit { justify-content: center; }` if you ever need to.
 
 Select styling
 --------------
 A native `<select>` opens a list drawn by the operating system. macOS, iOS and
 Safari ignore CSS on `option` completely; Windows Chrome/Edge and Firefox honour
 it. So the selected state is styled on the **closed** field instead: the script
-adds `.is-selected` to a select that has a value, which is the "Wybrany" tab in
-Elementor and works in every browser. The "Lista" tab writes to
-`option:checked`, and says so — treat it as a bonus, not as the design. A
-dropdown styled identically everywhere needs a custom listbox, not a `<select>`.
+adds `.is-selected` to a select that has a value. That is the second tab of the
+Select style section, and it works in every browser. The third tab writes to
+`option:checked` and says so in the panel — treat it as a bonus, not as the
+design. A dropdown styled identically everywhere needs a custom listbox, not a
+`<select>`.
 
 Requires Elementor 3.5+ (`elementor/widgets/register`). Without Elementor
 nothing is loaded and the shortcode is unaffected.
@@ -195,7 +235,10 @@ Full list: `--cwvb-accent`, `--cwvb-accent-contrast`, `--cwvb-text`,
 `--cwvb-muted`, `--cwvb-surface`, `--cwvb-border`, `--cwvb-border-hover`,
 `--cwvb-font-family`, `--cwvb-font-size`, `--cwvb-label-weight`,
 `--cwvb-label-spacing`, `--cwvb-price-size`, `--cwvb-price-gap`,
-`--cwvb-message-size`,
+`--cwvb-message-size`, `--cwvb-benefits-spacing-top`,
+`--cwvb-benefits-spacing`, `--cwvb-benefits-gap`, `--cwvb-benefits-marker-gap`,
+`--cwvb-benefits-marker-color`, `--cwvb-benefits-title-spacing`,
+`--cwvb-benefits-note-spacing`,
 `--cwvb-radius`, `--cwvb-gap`, `--cwvb-attribute-spacing`,
 `--cwvb-field-height`, `--cwvb-option-padding`, `--cwvb-border-width`,
 `--cwvb-transition`, `--cwvb-disabled-opacity`.
@@ -216,6 +259,13 @@ Class map for anything the variables do not cover:
     .custom-wvb__select             the select (.is-selected once it has a value)
     .custom-wvb__options            button container
     .custom-wvb__option             option button (.is-selected, :disabled)
+    .custom-wvb__benefits           package block between attributes and price
+    .custom-wvb__benefits-title     its heading
+    .custom-wvb__benefits-list      the <ul>
+    .custom-wvb__benefit            one line
+    .custom-wvb__benefit-marker     the check mark (aria-hidden)
+    .custom-wvb__benefit-text       the line's text
+    .custom-wvb__benefits-note      small print under the list
     .custom-wvb__price-row          price line ([hidden] until a variation resolves)
     .custom-wvb__price-prefix       text left of the price
     .custom-wvb__price              price

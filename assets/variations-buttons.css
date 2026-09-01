@@ -27,6 +27,19 @@
 
     --cwvb-price-gap: 8px;
 
+    /*
+     * The package block owns every value it uses. Sharing --cwvb-label-spacing
+     * or --cwvb-radius with the attribute labels and the buttons would mean
+     * restyling this box quietly restyles the controls above it.
+     */
+    --cwvb-benefits-spacing-top: 0px;
+    --cwvb-benefits-spacing: 24px;
+    --cwvb-benefits-gap: 8px;
+    --cwvb-benefits-marker-gap: 10px;
+    --cwvb-benefits-marker-color: var(--cwvb-accent);
+    --cwvb-benefits-title-spacing: 10px;
+    --cwvb-benefits-note-spacing: 12px;
+
     --cwvb-radius: 4px;
     --cwvb-gap: 8px;
     --cwvb-attribute-spacing: 24px;
@@ -126,6 +139,48 @@
 .custom-wvb__option:disabled {
     opacity: var(--cwvb-disabled-opacity);
     cursor: not-allowed;
+}
+
+/*
+ * Package copy between the attributes and the price. The list resets its own
+ * margin, padding and bullets, because themes style bare <ul> inside content.
+ */
+.custom-wvb__benefits {
+    margin-top: var(--cwvb-benefits-spacing-top);
+    margin-bottom: var(--cwvb-benefits-spacing);
+}
+
+.custom-wvb__benefits-title {
+    margin-bottom: var(--cwvb-benefits-title-spacing);
+    font-weight: var(--cwvb-label-weight);
+}
+
+.custom-wvb__benefits-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cwvb-benefits-gap);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.custom-wvb__benefit {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--cwvb-benefits-marker-gap);
+    margin: 0;
+    font-size: var(--cwvb-font-size);
+}
+
+.custom-wvb__benefit-marker {
+    flex: 0 0 auto;
+    color: var(--cwvb-benefits-marker-color);
+}
+
+.custom-wvb__benefits-note {
+    margin: var(--cwvb-benefits-note-spacing) 0 0;
+    color: var(--cwvb-muted);
+    font-size: var(--cwvb-message-size);
 }
 
 .custom-wvb__result {

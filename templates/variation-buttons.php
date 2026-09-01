@@ -14,6 +14,10 @@
  *     @type bool   $show_quantity  Whether the quantity field is visible.
  *     @type string $price_prefix   Text shown to the left of the price.
  *     @type string $step_format    Step number format, {n} = number. Empty = no numbers.
+ *     @type string $benefits_title Heading above the benefits list.
+ *     @type array  $benefits       Benefit lines, already trimmed and filtered.
+ *     @type string $benefits_marker Character in front of every benefit.
+ *     @type string $benefits_note  Small print under the benefits list.
  *     @type array  $config         Runtime config for the script.
  * }
  */
@@ -73,6 +77,44 @@ defined( 'ABSPATH' ) || exit;
             </div>
         <?php endforeach; ?>
     </div>
+
+    <?php
+    // Static package copy: the same for every variation, so it is not touched by
+    // the script and stays visible before anything is selected.
+    if ( '' !== $cwvb['benefits_title'] || ! empty( $cwvb['benefits'] ) || '' !== $cwvb['benefits_note'] ) :
+        ?>
+        <div class="custom-wvb__benefits">
+            <?php if ( '' !== $cwvb['benefits_title'] ) : ?>
+                <div class="custom-wvb__benefits-title">
+                    <?php echo esc_html( $cwvb['benefits_title'] ); ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if ( ! empty( $cwvb['benefits'] ) ) : ?>
+                <?php // role="list" because list-style:none drops list semantics in Safari. ?>
+                <ul class="custom-wvb__benefits-list" role="list">
+                    <?php foreach ( $cwvb['benefits'] as $benefit ) : ?>
+                        <li class="custom-wvb__benefit">
+                            <?php if ( '' !== $cwvb['benefits_marker'] ) : ?>
+                                <?php // Decorative: a screen reader repeating "check" four times helps nobody. ?>
+                                <span class="custom-wvb__benefit-marker" aria-hidden="true"><?php
+                                    echo esc_html( $cwvb['benefits_marker'] );
+                                ?></span>
+                            <?php endif; ?>
+
+                            <span class="custom-wvb__benefit-text"><?php echo esc_html( $benefit ); ?></span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+
+            <?php if ( '' !== $cwvb['benefits_note'] ) : ?>
+                <p class="custom-wvb__benefits-note">
+                    <?php echo esc_html( $cwvb['benefits_note'] ); ?>
+                </p>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
 
     <div class="custom-wvb__result" aria-live="polite">
         <?php // Hidden until a variation resolves, so the prefix never shows on its own. ?>

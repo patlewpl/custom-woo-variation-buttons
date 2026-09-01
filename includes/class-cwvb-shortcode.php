@@ -52,6 +52,10 @@ final class CWVB_Shortcode {
                 'price_prefix'     => '',
                 'step_numbers'     => 'yes',
                 'step_format'      => '{n}.',
+                'benefits_title'   => '',
+                'benefits'         => '',
+                'benefits_marker'  => '✓',
+                'benefits_note'    => '',
             ),
             $atts,
             self::TAG
@@ -96,9 +100,51 @@ final class CWVB_Shortcode {
                 'price_prefix'  => trim( (string) $atts['price_prefix'] ),
                 // Empty format = no numbering, so the template needs one check only.
                 'step_format'   => self::step_format( $atts ),
+
+                'benefits_title'  => trim( (string) $atts['benefits_title'] ),
+                'benefits'        => self::benefits( $atts['benefits'] ),
+                'benefits_marker' => (string) $atts['benefits_marker'],
+                'benefits_note'   => trim( (string) $atts['benefits_note'] ),
+
                 'config'        => self::build_config( (string) $atts['button_text'] ),
             )
         );
+    }
+
+    /**
+     * The benefit lines, whatever they arrived as.
+     *
+     * The Elementor widget passes its repeater rows (one array per row); the
+     * shortcode has only strings to work with, so there it is one benefit per
+     * line, or separated by a pipe. Blank lines are dropped, which is what makes
+     * a trailing newline in the shortcode harmless.
+     *
+     * @param mixed $value
+     */
+    private static function benefits( $value ): array {
+        if ( is_string( $value ) ) {
+            $value = preg_split( '/\r\n|\r|\n|\|/', $value );
+        }
+
+        if ( ! is_array( $value ) ) {
+            return array();
+        }
+
+        $benefits = array();
+
+        foreach ( $value as $benefit ) {
+            if ( is_array( $benefit ) ) {
+                $benefit = $benefit['text'] ?? '';
+            }
+
+            $benefit = trim( (string) $benefit );
+
+            if ( '' !== $benefit ) {
+                $benefits[] = $benefit;
+            }
+        }
+
+        return $benefits;
     }
 
     /**

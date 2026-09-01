@@ -91,7 +91,9 @@ class CWVB_Elementor_Widget extends \Elementor\Widget_Base {
 
     protected function register_controls() {
         $this->register_content_controls();
+        $this->register_benefits_controls();
         $this->register_layout_controls();
+        $this->register_benefits_style_controls();
         $this->register_label_controls();
         $this->register_option_controls();
         $this->register_select_controls();
@@ -201,6 +203,81 @@ class CWVB_Elementor_Widget extends \Elementor\Widget_Base {
         $this->end_controls_section();
     }
 
+    /**
+     * The package copy between the attributes and the price. Static: it does not
+     * change with the chosen variation.
+     */
+    private function register_benefits_controls(): void {
+        $this->start_controls_section(
+            'section_benefits',
+            array(
+                'label' => 'Zawartość pakietu',
+                'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
+            )
+        );
+
+        $this->add_control(
+            'benefits_title',
+            array(
+                'label'       => 'Nagłówek',
+                'type'        => \Elementor\Controls_Manager::TEXT,
+                'label_block' => true,
+                'default'     => 'W wybranym pakiecie otrzymujesz:',
+                'description' => 'Puste = bez nagłówka.',
+            )
+        );
+
+        $benefit = new \Elementor\Repeater();
+
+        $benefit->add_control(
+            'text',
+            array(
+                'label'       => 'Tekst',
+                'type'        => \Elementor\Controls_Manager::TEXT,
+                'label_block' => true,
+                'default'     => '',
+            )
+        );
+
+        $this->add_control(
+            'benefits',
+            array(
+                'label'       => 'Lista',
+                'type'        => \Elementor\Controls_Manager::REPEATER,
+                'fields'      => $benefit->get_controls(),
+                'title_field' => '{{{ text }}}',
+                'default'     => array(
+                    array( 'text' => '20 lekcji online 1:1' ),
+                    array( 'text' => 'Indywidualny plan nauki' ),
+                    array( 'text' => 'Materiały i wsparcie metodyka' ),
+                    array( 'text' => 'CAI Language Coach + Cambridge Online Tutor' ),
+                ),
+            )
+        );
+
+        $this->add_control(
+            'benefits_marker',
+            array(
+                'label'       => 'Znacznik',
+                'type'        => \Elementor\Controls_Manager::TEXT,
+                'default'     => '✓',
+                'description' => 'Dowolny znak lub emoji przed każdą pozycją. Puste = bez znacznika.',
+            )
+        );
+
+        $this->add_control(
+            'benefits_note',
+            array(
+                'label'       => 'Dopisek pod listą',
+                'type'        => \Elementor\Controls_Manager::TEXTAREA,
+                'rows'        => 3,
+                'default'     => 'Dostęp do konkretnej platformy zależy od wybranego języka i programu kursu.',
+            )
+        );
+
+        $this->end_controls_section();
+    }
+
     private function register_layout_controls(): void {
         $this->start_controls_section(
             'section_layout',
@@ -258,6 +335,270 @@ class CWVB_Elementor_Widget extends \Elementor\Widget_Base {
                 'range'      => array( 'px' => array( 'min' => 0, 'max' => 8 ) ),
                 'selectors'  => array(
                     '{{WRAPPER}} .custom-wvb' => '--cwvb-border-width: {{SIZE}}{{UNIT}};',
+                ),
+            )
+        );
+
+        $this->end_controls_section();
+    }
+
+    private function register_benefits_style_controls(): void {
+        $this->start_controls_section(
+            'section_benefits_style',
+            array(
+                'label' => 'Zawartość pakietu',
+                'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+            )
+        );
+
+        $this->add_responsive_control(
+            'benefits_spacing_top',
+            array(
+                'label'      => 'Odstęp nad blokiem',
+                'type'       => \Elementor\Controls_Manager::SLIDER,
+                'size_units' => array( 'px', 'em' ),
+                'range'      => array( 'px' => array( 'min' => 0, 'max' => 80 ) ),
+                'selectors'  => array(
+                    '{{WRAPPER}} .custom-wvb' => '--cwvb-benefits-spacing-top: {{SIZE}}{{UNIT}};',
+                ),
+            )
+        );
+
+        $this->add_responsive_control(
+            'benefits_spacing',
+            array(
+                'label'      => 'Odstęp pod blokiem',
+                'type'       => \Elementor\Controls_Manager::SLIDER,
+                'size_units' => array( 'px', 'em' ),
+                'range'      => array( 'px' => array( 'min' => 0, 'max' => 80 ) ),
+                'selectors'  => array(
+                    '{{WRAPPER}} .custom-wvb' => '--cwvb-benefits-spacing: {{SIZE}}{{UNIT}};',
+                ),
+            )
+        );
+
+        $this->add_responsive_control(
+            'benefits_padding',
+            array(
+                'label'      => 'Wewnętrzne odstępy',
+                'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => array( 'px', 'em' ),
+                'selectors'  => array(
+                    '{{WRAPPER}} .custom-wvb__benefits' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ),
+            )
+        );
+
+        $this->add_control(
+            'benefits_background',
+            array(
+                'label'     => 'Tło bloku',
+                'type'      => \Elementor\Controls_Manager::COLOR,
+                'selectors' => array(
+                    '{{WRAPPER}} .custom-wvb__benefits' => 'background: {{VALUE}};',
+                ),
+            )
+        );
+
+        /*
+         * Elementor's own border group, not a colour that reuses the widget's
+         * global border width and radius: the package box has to be framable
+         * without changing the option buttons and the select.
+         */
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            array(
+                'name'     => 'benefits_border',
+                'selector' => '{{WRAPPER}} .custom-wvb__benefits',
+            )
+        );
+
+        $this->add_responsive_control(
+            'benefits_radius',
+            array(
+                'label'      => 'Zaokrąglenie bloku',
+                'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => array( 'px', '%' ),
+                'selectors'  => array(
+                    '{{WRAPPER}} .custom-wvb__benefits' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ),
+            )
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Box_Shadow::get_type(),
+            array(
+                'name'     => 'benefits_box_shadow',
+                'selector' => '{{WRAPPER}} .custom-wvb__benefits',
+            )
+        );
+
+        $this->add_control(
+            'benefits_title_heading',
+            array(
+                'label'     => 'Nagłówek',
+                'type'      => \Elementor\Controls_Manager::HEADING,
+                'separator' => 'before',
+            )
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            array(
+                'name'     => 'benefits_title_typography',
+                'selector' => '{{WRAPPER}} .custom-wvb__benefits-title',
+            )
+        );
+
+        $this->add_control(
+            'benefits_title_color',
+            array(
+                'label'     => 'Kolor',
+                'type'      => \Elementor\Controls_Manager::COLOR,
+                'selectors' => array(
+                    '{{WRAPPER}} .custom-wvb__benefits-title' => 'color: {{VALUE}};',
+                ),
+            )
+        );
+
+        $this->add_responsive_control(
+            'benefits_title_spacing',
+            array(
+                'label'      => 'Odstęp pod nagłówkiem',
+                'type'       => \Elementor\Controls_Manager::SLIDER,
+                'size_units' => array( 'px', 'em' ),
+                'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+                'selectors'  => array(
+                    '{{WRAPPER}} .custom-wvb' => '--cwvb-benefits-title-spacing: {{SIZE}}{{UNIT}};',
+                ),
+            )
+        );
+
+        $this->add_control(
+            'benefits_list_heading',
+            array(
+                'label'     => 'Lista',
+                'type'      => \Elementor\Controls_Manager::HEADING,
+                'separator' => 'before',
+            )
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            array(
+                'name'     => 'benefits_typography',
+                'selector' => '{{WRAPPER}} .custom-wvb__benefit',
+            )
+        );
+
+        $this->add_control(
+            'benefits_color',
+            array(
+                'label'     => 'Kolor tekstu',
+                'type'      => \Elementor\Controls_Manager::COLOR,
+                'selectors' => array(
+                    '{{WRAPPER}} .custom-wvb__benefit' => 'color: {{VALUE}};',
+                ),
+            )
+        );
+
+        $this->add_control(
+            'benefits_marker_heading',
+            array(
+                'label'     => 'Znacznik',
+                'type'      => \Elementor\Controls_Manager::HEADING,
+                'separator' => 'before',
+            )
+        );
+
+        $this->add_control(
+            'benefits_marker_color',
+            array(
+                'label'     => 'Kolor',
+                'type'      => \Elementor\Controls_Manager::COLOR,
+                'selectors' => array(
+                    '{{WRAPPER}} .custom-wvb' => '--cwvb-benefits-marker-color: {{VALUE}};',
+                ),
+            )
+        );
+
+        // Without its own typography the check mark can only ever be the size of
+        // the line it sits on.
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            array(
+                'name'     => 'benefits_marker_typography',
+                'selector' => '{{WRAPPER}} .custom-wvb__benefit-marker',
+            )
+        );
+
+        $this->add_responsive_control(
+            'benefits_gap',
+            array(
+                'label'      => 'Odstęp między pozycjami',
+                'type'       => \Elementor\Controls_Manager::SLIDER,
+                'size_units' => array( 'px', 'em' ),
+                'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+                'selectors'  => array(
+                    '{{WRAPPER}} .custom-wvb' => '--cwvb-benefits-gap: {{SIZE}}{{UNIT}};',
+                ),
+            )
+        );
+
+        $this->add_responsive_control(
+            'benefits_marker_gap',
+            array(
+                'label'      => 'Odstęp za znacznikiem',
+                'type'       => \Elementor\Controls_Manager::SLIDER,
+                'size_units' => array( 'px', 'em' ),
+                'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+                'selectors'  => array(
+                    '{{WRAPPER}} .custom-wvb' => '--cwvb-benefits-marker-gap: {{SIZE}}{{UNIT}};',
+                ),
+            )
+        );
+
+        $this->add_control(
+            'benefits_note_heading',
+            array(
+                'label'     => 'Dopisek',
+                'type'      => \Elementor\Controls_Manager::HEADING,
+                'separator' => 'before',
+                'condition' => array( 'benefits_note!' => '' ),
+            )
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            array(
+                'name'      => 'benefits_note_typography',
+                'selector'  => '{{WRAPPER}} .custom-wvb__benefits-note',
+                'condition' => array( 'benefits_note!' => '' ),
+            )
+        );
+
+        $this->add_control(
+            'benefits_note_color',
+            array(
+                'label'     => 'Kolor',
+                'type'      => \Elementor\Controls_Manager::COLOR,
+                'condition' => array( 'benefits_note!' => '' ),
+                'selectors' => array(
+                    '{{WRAPPER}} .custom-wvb__benefits-note' => 'color: {{VALUE}};',
+                ),
+            )
+        );
+
+        $this->add_responsive_control(
+            'benefits_note_spacing',
+            array(
+                'label'      => 'Odstęp nad dopiskiem',
+                'type'       => \Elementor\Controls_Manager::SLIDER,
+                'size_units' => array( 'px', 'em' ),
+                'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+                'condition'  => array( 'benefits_note!' => '' ),
+                'selectors'  => array(
+                    '{{WRAPPER}} .custom-wvb' => '--cwvb-benefits-note-spacing: {{SIZE}}{{UNIT}};',
                 ),
             )
         );
@@ -1002,6 +1343,11 @@ class CWVB_Elementor_Widget extends \Elementor\Widget_Base {
                 'step_numbers'     => $settings['step_numbers'] ?? 'yes',
                 // A cleared format field falls back to "{n}." in the renderer.
                 'step_format'      => $settings['step_format'] ?? '{n}.',
+                'benefits_title'   => $settings['benefits_title'] ?? '',
+                // Repeater rows; the renderer reads 'text' out of each one.
+                'benefits'         => $settings['benefits'] ?? array(),
+                'benefits_marker'  => $settings['benefits_marker'] ?? '',
+                'benefits_note'    => $settings['benefits_note'] ?? '',
             )
         );
 
