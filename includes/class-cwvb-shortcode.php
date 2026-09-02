@@ -106,7 +106,7 @@ final class CWVB_Shortcode {
                 'benefits_marker' => (string) $atts['benefits_marker'],
                 'benefits_note'   => trim( (string) $atts['benefits_note'] ),
 
-                'config'        => self::build_config( (string) $atts['button_text'] ),
+                'config'        => self::build_config( $product_id, (string) $atts['button_text'] ),
             )
         );
     }
@@ -178,9 +178,12 @@ final class CWVB_Shortcode {
     /**
      * Everything the script reads from the wrapper's data-config attribute.
      */
-    private static function build_config( string $button_text ): array {
+    private static function build_config( int $product_id, string $button_text ): array {
         return array(
-            'ajaxUrl' => class_exists( 'WC_AJAX' ) ? WC_AJAX::get_endpoint( 'add_to_cart' ) : '',
+            // The parent product; the variation travels separately, together
+            // with the attribute values the customer chose.
+            'productId' => $product_id,
+            'ajaxUrl'   => CWVB_Cart::endpoint(),
             'i18n'    => array(
                 'selectAll'   => 'Wybierz wszystkie opcje produktu.',
                 'unavailable' => 'Wybrana kombinacja jest niedostępna.',

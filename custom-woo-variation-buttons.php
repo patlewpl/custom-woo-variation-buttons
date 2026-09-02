@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WooCommerce Variation Buttons from patlew.pl
  * Description: Renders a WooCommerce variable product on any page with one configurable select attribute and button-based remaining attributes.
- * Version: 1.4.1
+ * Version: 1.4.2
  * Author: patlew.pl
  * Plugin URI: https://github.com/patlewpl/custom-woo-variation-buttons
  * Update URI: https://github.com/patlewpl/custom-woo-variation-buttons
@@ -48,6 +48,7 @@ foreach (
         'includes/class-cwvb-assets.php',
         'includes/class-cwvb-attributes.php',
         'includes/class-cwvb-product-data.php',
+        'includes/class-cwvb-cart.php',
         'includes/class-cwvb-shortcode.php',
         'includes/class-cwvb-elementor.php',
         'includes/class-cwvb-updater.php',

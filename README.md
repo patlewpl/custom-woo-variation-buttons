@@ -83,6 +83,7 @@ Structure
       class-cwvb-assets.php                   CSS/JS registration and enqueue
       class-cwvb-attributes.php               value normalisation, labels, select vs buttons
       class-cwvb-product-data.php             reads variations from WooCommerce + cache
+      class-cwvb-cart.php                     the add-to-cart endpoint
       class-cwvb-shortcode.php                shortcode, guards, error logging
       class-cwvb-elementor.php                Elementor widget registration (lazy)
       class-cwvb-updater.php                  updates from GitHub releases
@@ -304,6 +305,29 @@ Inside a single request the payload is memoised per product as well, so two
 widgets for the same product (or a widget next to a shortcode) cost one lookup.
 That holds with the TTL filtered to 0 too: currency, tax display and stock
 cannot change mid-request.
+
+Adding to the cart
+------------------
+The widget posts to its own endpoint, `?wc-ajax=cwvb_add_to_cart`, rather than
+to WooCommerce's `add_to_cart`, because that one reads `product_id` and
+`quantity` and nothing else. Handed a variation ID it rebuilds the attributes
+with `WC_Product_Variation::get_variation_attributes()`, which returns an empty
+string for every attribute the variation leaves as **Any** — and
+`WC_Cart::add_to_cart()` then refuses the item with "<attribute> is a required
+field". The customer's choice had no parameter to travel in.
+
+So this endpoint posts the parent product, the variation, the quantity and the
+`attribute_*` values the customer actually picked, which is what the cart wants.
+It checks the variation really belongs to that product, drops any key that is
+not an `attribute_*` one, and leaves value validation to `WC_Cart`, which
+compares each one against the parent's own list and words the error better than
+this plugin could. That error is returned to the browser and shown under the
+price, instead of a generic failure message.
+
+There is no nonce, deliberately: the markup can be served from a full-page
+cache, and a cached nonce is a broken nonce. WooCommerce omits it on its own
+add-to-cart endpoint for the same reason, and the action only ever writes to the
+caller's own cart.
 
 Error handling
 --------------

@@ -11,6 +11,9 @@ final class Custom_Woo_Variation_Buttons {
         add_action( 'wp_enqueue_scripts', array( 'CWVB_Assets', 'register' ) );
         add_shortcode( CWVB_Shortcode::TAG, array( 'CWVB_Shortcode', 'render' ) );
 
+        // The add-to-cart endpoint the widget's script posts to.
+        CWVB_Cart::init();
+
         // No-op when Elementor is not installed; the shortcode works regardless.
         CWVB_Elementor::init();
 

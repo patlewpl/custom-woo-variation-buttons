@@ -413,13 +413,16 @@
             }
 
             /*
-             * WC_AJAX::add_to_cart reads product_id and quantity only; a variation
-             * ID passed as product_id is remapped by WC_Cart::add_to_cart, which
-             * pulls the attributes off the variation itself.
+             * The chosen values have to travel with the request. WooCommerce
+             * stores an empty string for an attribute a variation leaves as
+             * "Any", so a variation ID on its own cannot describe what the
+             * customer picked, and the cart rejects it as a missing field.
              */
             const payload = {
-                product_id: state.variation.id,
-                quantity: getQuantity(state.variation)
+                product_id: config.productId,
+                variation_id: state.variation.id,
+                quantity: getQuantity(state.variation),
+                attributes: getSelections()
             };
 
             const originalText = addButton.textContent;
@@ -435,7 +438,11 @@
             })
                 .done(function (response) {
                     if (!response || response.error) {
-                        setMessage(t('error', 'Nie udało się dodać tego wariantu do koszyka. Spróbuj ponownie.'));
+                        // WooCommerce explains the refusal better than we can.
+                        setMessage(
+                            (response && response.message) ||
+                            t('error', 'Nie udało się dodać tego wariantu do koszyka. Spróbuj ponownie.')
+                        );
 
                         if (response && response.product_url) {
                             window.location.href = response.product_url;
