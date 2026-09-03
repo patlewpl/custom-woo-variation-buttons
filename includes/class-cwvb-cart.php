@@ -21,6 +21,12 @@ final class CWVB_Cart {
     public const ACTION = 'cwvb_add_to_cart';
 
     /**
+     * Output buffer depth when the handler started, so only what this request
+     * opened is ever discarded.
+     */
+    private static $buffer_level = 0;
+
+    /**
      * wc_ajax_{action} covers guests and logged-in customers alike - unlike
      * admin-ajax there is no separate nopriv hook - and skips loading wp-admin.
      */
@@ -42,6 +48,14 @@ final class CWVB_Cart {
      * the action only ever writes to the caller's own cart.
      */
     public static function add_to_cart(): void {
+        /*
+         * Cart templates and third-party callbacks print. Anything they emit
+         * would land in front of the JSON and leave the browser with a response
+         * it cannot parse.
+         */
+        self::$buffer_level = ob_get_level();
+        ob_start();
+
         if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
             self::fail( 'Koszyk jest niedostępny.' );
         }
@@ -80,12 +94,53 @@ final class CWVB_Cart {
 
         do_action( 'woocommerce_ajax_added_to_cart', $product_id );
 
-        wp_send_json(
-            array(
-                'fragments' => apply_filters( 'woocommerce_add_to_cart_fragments', array() ),
-                'cart_hash' => WC()->cart->get_cart_hash(),
-            )
+        self::discard_output();
+
+        /*
+         * Hand back exactly what WooCommerce's own refresh returns. The mini
+         * cart fragment is not optional: wc-cart-fragments.js caches whatever
+         * arrives with the added_to_cart event in sessionStorage and re-applies
+         * it on every later page load, looking for
+         * div.widget_shopping_cart_content. A set without it leaves themes and
+         * the Elementor menu cart working from a cart that never refreshes.
+         *
+         * Calling WooCommerce's method keeps that payload correct even if it
+         * grows new keys; the fallback covers it ever going away.
+         */
+        if ( method_exists( 'WC_AJAX', 'get_refreshed_fragments' ) ) {
+            WC_AJAX::get_refreshed_fragments(); // Sends the JSON and exits.
+        }
+
+        wp_send_json( self::fragments() );
+    }
+
+    /**
+     * The payload WC_AJAX::get_refreshed_fragments() builds, rebuilt here.
+     */
+    private static function fragments(): array {
+        $mini_cart = '';
+
+        if ( function_exists( 'woocommerce_mini_cart' ) ) {
+            ob_start();
+            woocommerce_mini_cart();
+            $mini_cart = (string) ob_get_clean();
+        }
+
+        return array(
+            'fragments' => apply_filters(
+                'woocommerce_add_to_cart_fragments',
+                array(
+                    'div.widget_shopping_cart_content' => '<div class="widget_shopping_cart_content">' . $mini_cart . '</div>',
+                )
+            ),
+            'cart_hash' => WC()->cart->get_cart_hash(),
         );
+    }
+
+    private static function discard_output(): void {
+        while ( ob_get_level() > self::$buffer_level ) {
+            ob_end_clean();
+        }
     }
 
     /**
@@ -144,6 +199,8 @@ final class CWVB_Cart {
      *                        to its own wording.
      */
     private static function fail( string $message ): void {
+        self::discard_output();
+
         wp_send_json(
             array(
                 'error'   => true,

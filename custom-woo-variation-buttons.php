@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WooCommerce Variation Buttons from patlew.pl
  * Description: Renders a WooCommerce variable product on any page with one configurable select attribute and button-based remaining attributes.
- * Version: 1.4.2
+ * Version: 1.4.4
  * Author: patlew.pl
  * Plugin URI: https://github.com/patlewpl/custom-woo-variation-buttons
  * Update URI: https://github.com/patlewpl/custom-woo-variation-buttons

@@ -266,6 +266,10 @@
     cursor: not-allowed;
 }
 
+.custom-wvb .added_to_cart {
+    display: none;
+}
+
 @media (max-width: 767px) {
     .custom-wvb__purchase {
         align-items: stretch;

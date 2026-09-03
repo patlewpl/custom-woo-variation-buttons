@@ -324,6 +324,24 @@ compares each one against the parent's own list and words the error better than
 this plugin could. That error is returned to the browser and shown under the
 price, instead of a generic failure message.
 
+On success it returns exactly what WooCommerce's own refresh returns, by calling
+`WC_AJAX::get_refreshed_fragments()`. That matters: `wc-cart-fragments.js`
+caches whatever arrives with the `added_to_cart` event in `sessionStorage` and
+re-applies it on every later page load, looking for
+`div.widget_shopping_cart_content`. Returning a fragment set without it leaves
+themes and the Elementor menu cart working from a mini cart that never
+refreshes.
+
+The handler also buffers its own output, because cart templates and third-party
+callbacks print; anything they emit would otherwise sit in front of the JSON and
+leave the browser unable to parse the response.
+
+The script hands the add-to-cart button to the `added_to_cart` event as a jQuery
+object, which is what WooCommerce's own listener expects — a bare DOM element
+throws there and aborts every later listener on the event, the mini cart
+included. WooCommerce then appends its "view cart" link after the button; the
+stylesheet hides it with `.custom-wvb .added_to_cart { display: none }`.
+
 There is no nonce, deliberately: the markup can be served from a full-page
 cache, and a cached nonce is a broken nonce. WooCommerce omits it on its own
 add-to-cart endpoint for the same reason, and the action only ever writes to the
